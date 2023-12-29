@@ -278,12 +278,13 @@ $j(document).on('click', '#submit', function(){
 	let plans = validateArrayEntityEmpty(arrayTravelPlan());
 	console.log(typeof plans);
 	
-	console.log(JSON.stringify({planList : plans}));
+	console.log(JSON.stringify({plans : plans}));
 	$j.ajax({
 		type: 'POST',
 		url: '/travel/admin.do',
-		data: plans,
+		data: JSON.stringify({plans : plans}),
 		dataType: 'json',
+		contentType: 'application/json',
 		success: function(data){
 			if(data.result === 1){
 				alert('저장완료');
@@ -301,7 +302,7 @@ function arrayTravelPlan(){ // array plan 생성
 	let arrayPlans = [];
 	
 	$j('.table_trave  tr.plan_row').each(function(){
-		let expend = parseInt($j(this).find('.userExpend').val().replace(/,/g,''));
+		let expend = parseInt($j(this).find('.useExpend').val().replace(/,/g,''));
 		let cost = parseInt($j(this).find('.traveCost').text().replace(/[원,]/g,''));
 		
 		let plan = {
@@ -314,13 +315,13 @@ function arrayTravelPlan(){ // array plan 생성
 			traveLoc: $j(this).find('.traveLoc').val(),
 			traveTrans: $j(this).find('.traveTrans').val(),
 			transTime: $j(this).find('.transTime').val(),
-			userExpend: isNaN(expend) ? '' : expend,
+			useExpend: isNaN(expend) ? '' : expend,
 			traveDetail: $j(this).find('.traveDetail').val()
 		};
 		
-		if(plan.userExpend){
+		if(plan.useExpend){
 			let resultCost = (cost === 0) ? '' : cost;
-			plan.userExpend = parseInt(plan.userExpend + resultCost).toLocaleString();
+			plan.useExpend = parseInt(plan.useExpend + resultCost).toLocaleString();
 		}
 		
 		arrayPlans.push(plan);
@@ -338,18 +339,6 @@ function validateArrayEntityEmpty(arrayEntity){
 	    return true; // 유지할 요소
 	});
 	return entitys;
-	/*let entitys = [];
-	let i = 0;
-	let row = 0;
-	for(let entity of arrayEntity){
-		entitys.push(entity);
-		if(!validateEntityEmpty(entity, i)){
-			entitys.splice(i, 1);
-			i--;
-		}
-		i++;
-	}
-	return entitys;*/
 }
 
 function validateEntityEmpty(entity, i){

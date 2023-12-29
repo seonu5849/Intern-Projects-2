@@ -54,19 +54,8 @@ public class TravelServiceImpl implements TravelService {
 		Integer affectedRows = null;
 		
 		try {
-//			for(Object obj : planList) {
-//				log.info(obj.getClass().getName());
-//				if(obj instanceof TravelVo) {
-//					TravelVo plan = (TravelVo) obj;
-//					log.info("plan : {}",plan);
-//					affectedRows = this.TravelDao.insertTravelPlan(plan);
-//				}
-//				
-//			}
-			for(Object obj : planList) {
-				if(obj instanceof Map<String, Object>) {
-					
-				}
+			for(TravelVo plan : planList) {
+				affectedRows = this.TravelDao.mergeTravelPlan(plan);
 			}
 		}catch(Exception e) {
 			e.printStackTrace();

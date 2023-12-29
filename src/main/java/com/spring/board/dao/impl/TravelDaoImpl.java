@@ -31,8 +31,8 @@ public class TravelDaoImpl implements TravelDao{
 	}
 
 	@Override
-	public Integer insertTravelPlan(TravelVo travelVo) throws Exception {
-		return this.sqlSession.insert("travel.insertTravelPlan", travelVo);
+	public Integer mergeTravelPlan(TravelVo travelVo) throws Exception {
+		return this.sqlSession.insert("travel.mergeTravelPlan", travelVo);
 	}
 
 }

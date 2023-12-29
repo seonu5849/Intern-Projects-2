@@ -12,7 +12,7 @@ public class TravelVo {
 	private String traveTrans; // 이동수단
 	private String transTime; // 이동시간
 	private String useTime; // 이용시간
-	private String userExpend; // 예상지출액
+	private String useExpend; // 예상지출액
 	private String traveDetail; // 계획상세
 	private String request; // 수정요청
 	
@@ -76,11 +76,11 @@ public class TravelVo {
 	public void setUseTime(String useTime) {
 		this.useTime = useTime;
 	}
-	public String getUserExpend() {
-		return userExpend;
+	public String getUseExpend() {
+		return useExpend;
 	}
-	public void setUserExpend(String userExpend) {
-		this.userExpend = userExpend;
+	public void setUseExpend(String useExpend) {
+		this.useExpend = useExpend;
 	}
 	public String getTraveDetail() {
 		return traveDetail;
@@ -108,7 +108,7 @@ public class TravelVo {
                 ", traveTrans:'" + traveTrans + '\'' +
                 ", transTime:'" + transTime + '\'' +
                 ", useTime:'" + useTime + '\'' +
-                ", userExpend:'" + userExpend + '\'' +
+                ", useExpend:'" + useExpend + '\'' +
                 ", traveDetail:'" + traveDetail + '\'' +
                 ", request:'" + request + '\'' +
                 '}';

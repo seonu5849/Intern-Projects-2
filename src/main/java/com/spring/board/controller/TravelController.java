@@ -95,10 +95,12 @@ public class TravelController {
 	
 	@ResponseBody
 	@RequestMapping(value="/admin.do", method=RequestMethod.POST)
-	public Map<String, Object> adminAddPlans(List<TravelVo> planList){
-		log.trace("adminAddPlans({}) invoked.",planList.toString());
+	public Map<String, Object> adminAddPlans(@RequestBody UserVo userVo){
+		log.trace("adminAddPlans({}) invoked.",userVo.getTravelVo());
 		Map<String, Object> map = new HashMap<>();
-		Integer affectedRows = this.travelService.submitTravelPlans(planList);
+		Integer affectedRows = this.travelService.submitTravelPlans(userVo.getTravelVo());
+		log.info("affectedRows::{}",affectedRows);
+		
 		map.put("result", affectedRows);
 		
 		return map;

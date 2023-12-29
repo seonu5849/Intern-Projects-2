@@ -157,7 +157,7 @@
 				</select>
 			</td>
 			<td><input type="text" name="transTime" class="transTime"></td>
-			<td><input type="text" name="userExpend" class="userExpend"></td>
+			<td><input type="text" name="useExpend" class="useExpend"></td>
 			<td><input type="text" name="traveDetail" class="traveDetail"></td>
 			<td><span class="traveCost">0원</span></td>
 		</tr>

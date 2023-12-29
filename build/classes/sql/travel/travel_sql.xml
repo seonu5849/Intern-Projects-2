@@ -25,7 +25,7 @@
 		<result property="traveTrans" column="TRAVE_TRANS"/>
 		<result property="transTime" column="TRANS_TIME"/>
 		<result property="useTime" column="USE_TIME"/>
-		<result property="userExpend" column="USER_EXPEND"/>
+		<result property="useExpend" column="USE_EXPEND"/>
 		<result property="traveDetail" column="TRAVE_DETAIL"/>
 		<result property="request" column="REQUEST"/>
 	</resultMap>
@@ -64,35 +64,36 @@
 			CLIENT_INFO
     </select>
     
-    <insert id="insertTravelPlan" parameterType="com.spring.board.vo.TravelVo">
-    	INSERT INTO trave_info(
-    		TRAVE_SEQ,
-			SEQ,
-			TRAVE_DAY,
-			TRAVE_TIME,
-			TRAVE_CITY,
-			TRAVE_COUNTY,
-			TRAVE_LOC,
-			TRAVE_TRANS,
-			TRANS_TIME,
-			USE_TIME,
-			USE_EXPEND,
-			TRAVE_DETAIL
-    	)
-    	VALUES(
-   			(SELECT NVL(MAX(trave_seq),0)+1 FROM trave_info),
-   			#{userSeq},
-   			#{traveDay},
-   			#{traveTime},
-   			#{traveCity},
-   			#{traveCounty},
-   			#{traveLoc},
-   			#{traveTrans},
-   			#{transTime},
-   			#{useTime},
-   			#{userExpend},
-   			#{traveDetail}
-    	)
+    <insert id="mergeTravelPlan" parameterType="com.spring.board.vo.TravelVo">
+		MERGE INTO trave_info t
+		USING dual
+		ON (t.seq = #{userSeq} AND t.trave_seq = #{seq, jdbcType=VARCHAR})
+		WHEN MATCHED THEN 
+		    UPDATE SET 
+		        trave_day = #{traveDay},
+		        trave_time = #{traveTime},
+		        trave_city = #{traveCity},
+		        trave_county = #{traveCounty},
+		        trave_loc = #{traveLoc},
+		        trave_trans = #{traveTrans},
+		        trans_time = #{transTime},
+		        use_expend = #{useExpend},
+		        trave_detail = #{traveDetail}
+		WHEN NOT MATCHED THEN
+		    INSERT (trave_seq, seq, trave_day, trave_time, trave_city, trave_county, trave_loc, trave_trans, trans_time, use_expend, trave_detail)
+		    VALUES(
+		        (SELECT NVL(MAX(trave_seq),0)+1 FROM trave_info),
+		        #{userSeq},
+	   			#{traveDay},
+	   			#{traveTime},
+	   			#{traveCity},
+	   			#{traveCounty},
+	   			#{traveLoc},
+	   			#{traveTrans},
+	   			#{transTime},
+	   			#{useExpend},
+	   			#{traveDetail}
+		    )
     </insert>
     
 </mapper>

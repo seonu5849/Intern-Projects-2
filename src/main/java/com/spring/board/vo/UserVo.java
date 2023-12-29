@@ -2,6 +2,8 @@ package com.spring.board.vo;
 
 import java.util.List;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 public class UserVo {
 	
 	private String seq; // 번호
@@ -12,6 +14,7 @@ public class UserVo {
 	private String expend; // 예상경비
 	private String transport; // 이동수단
 	
+	@JsonProperty("plans")
 	private List<TravelVo> travelVo; // trave_info
 
 	public String getSeq() {
