@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="travel">
+    
+	<resultMap id="userVo" type="com.spring.board.vo.UserVo">
+		<id property="seq" column="SEQ"/>
+		<result property="name" column="USER_NAME"/>
+		<result property="phone" column="USER_PHONE"/>
+		<result property="traveCity" column="TRAVE_CITY"/>
+		<result property="period" column="PERIOD"/>
+		<result property="expend" column="EXPEND"/>
+		<result property="transport" column="TRANSPORT"/>
+		
+		<collection property="travelVo" resultMap="travelVo"></collection>
+	</resultMap>
+	
+	<resultMap id="travelVo" type="com.spring.board.vo.TravelVo">
+		<id property="seq" column="TRAVE_SEQ"/>
+		<result property="userSeq" column="SEQ"/>
+		<result property="traveDay" column="TRAVE_DAY"/>
+		<result property="traveTime" column="TRAVE_TIEM"/>
+		<result property="traveCity" column="TRAVE_CITY"/>
+		<result property="traveCounty" column="TRAVE_COUNTY"/>
+		<result property="traveLoc" column="TRAVE_LOC"/>
+		<result property="traveTrans" column="TRAVE_TRANS"/>
+		<result property="transTime" column="TRANS_TIME"/>
+		<result property="useTime" column="USE_TIME"/>
+		<result property="userExpend" column="USER_EXPEND"/>
+		<result property="traveDetail" column="TRAVE_DETAIL"/>
+		<result property="request" column="REQUEST"/>
+	</resultMap>
+    
+    <insert id="insertRequestUser" parameterType="com.spring.board.vo.UserVo">
+    	INSERT INTO CLIENT_INFO (
+    		SEQ,
+			USER_NAME,
+			USER_PHONE,
+			TRAVE_CITY,
+			PERIOD,
+			EXPEND,
+			TRANSPORT
+    	)
+    	VALUES(
+    		(SELECT NVL(MAX(seq),0)+1 FROM CLIENT_INFO),
+    		#{name},
+    		#{phone},
+    		#{traveCity},
+    		#{period},
+    		#{expend},
+    		#{transport}
+    	)
+    </insert>
+    
+    <select id="selectRequestUseerList" resultMap="userVo">
+    	SELECT
+    		SEQ,
+			USER_NAME,
+			USER_PHONE,
+			TRAVE_CITY,
+			PERIOD,
+			EXPEND,
+			TRANSPORT
+		FROM
+			CLIENT_INFO
+    </select>
+    
+    <insert id="insertTravelPlan" parameterType="com.spring.board.vo.TravelVo">
+    	INSERT INTO trave_info(
+    		TRAVE_SEQ,
+			SEQ,
+			TRAVE_DAY,
+			TRAVE_TIME,
+			TRAVE_CITY,
+			TRAVE_COUNTY,
+			TRAVE_LOC,
+			TRAVE_TRANS,
+			TRANS_TIME,
+			USE_TIME,
+			USE_EXPEND,
+			TRAVE_DETAIL
+    	)
+    	VALUES(
+   			(SELECT NVL(MAX(trave_seq),0)+1 FROM trave_info),
+   			#{userSeq},
+   			#{traveDay},
+   			#{traveTime},
+   			#{traveCity},
+   			#{traveCounty},
+   			#{traveLoc},
+   			#{traveTrans},
+   			#{transTime},
+   			#{useTime},
+   			#{userExpend},
+   			#{traveDetail}
+    	)
+    </insert>
+    
+</mapper>
