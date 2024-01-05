@@ -13,4 +13,10 @@ public interface TravelService {
 	
 	public abstract Integer submitTravelPlans(List<TravelVo> planList);
 	
+	public abstract List<TravelVo> findUserDetailTravelPlans(TravelVo travelVo);
+	
+	public abstract Integer totalTravelRowNum();
+	
+	public abstract Integer deleteUserDetailPlans(String[] traveSeqs);
+	
 }

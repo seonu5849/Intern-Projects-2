@@ -91,6 +91,7 @@ public class UserVo {
                 ", period='" + period + '\'' +
                 ", expend='" + expend + '\'' +
                 ", transport='" + transport + '\'' +
+                ", travelVo='" + travelVo + '\'' +
                 '}';
     }
 

@@ -18,7 +18,7 @@
 		<id property="seq" column="TRAVE_SEQ"/>
 		<result property="userSeq" column="SEQ"/>
 		<result property="traveDay" column="TRAVE_DAY"/>
-		<result property="traveTime" column="TRAVE_TIEM"/>
+		<result property="traveTime" column="TRAVE_TIME"/>
 		<result property="traveCity" column="TRAVE_CITY"/>
 		<result property="traveCounty" column="TRAVE_COUNTY"/>
 		<result property="traveLoc" column="TRAVE_LOC"/>
@@ -52,7 +52,7 @@
     </insert>
     
     <select id="selectRequestUseerList" resultMap="userVo">
-    	SELECT
+    	<!-- SELECT
     		SEQ,
 			USER_NAME,
 			USER_PHONE,
@@ -61,16 +61,30 @@
 			EXPEND,
 			TRANSPORT
 		FROM
-			CLIENT_INFO
+			CLIENT_INFO -->
+		select 
+		    t1.SEQ,
+		    t1.USER_NAME,
+		    t1.USER_PHONE,
+		    t1.TRAVE_CITY,
+		    t1.PERIOD,
+		    t1.EXPEND,
+		    t1.TRANSPORT,
+		    sum(t2.USE_EXPEND) as USE_EXPEND
+		from
+		    client_info t1 left join trave_info t2
+		on t1.seq = t2.seq 
+		group by 
+		t1.SEQ, t1.USER_NAME, t1.USER_PHONE, t1.TRAVE_CITY, t1.PERIOD, 
+		t1.EXPEND, t1.TRANSPORT
     </select>
     
     <insert id="mergeTravelPlan" parameterType="com.spring.board.vo.TravelVo">
 		MERGE INTO trave_info t
 		USING dual
-		ON (t.seq = #{userSeq} AND t.trave_seq = #{seq, jdbcType=VARCHAR})
+		ON (t.seq = #{userSeq} AND t.trave_seq = #{seq, jdbcType=VARCHAR} AND t.trave_day = #{traveDay})
 		WHEN MATCHED THEN 
 		    UPDATE SET 
-		        trave_day = #{traveDay},
 		        trave_time = #{traveTime},
 		        trave_city = #{traveCity},
 		        trave_county = #{traveCounty},
@@ -82,7 +96,7 @@
 		WHEN NOT MATCHED THEN
 		    INSERT (trave_seq, seq, trave_day, trave_time, trave_city, trave_county, trave_loc, trave_trans, trans_time, use_expend, trave_detail)
 		    VALUES(
-		        (SELECT NVL(MAX(trave_seq),0)+1 FROM trave_info),
+		        #{seq, jdbcType=VARCHAR},
 		        #{userSeq},
 	   			#{traveDay},
 	   			#{traveTime},
@@ -96,4 +110,36 @@
 		    )
     </insert>
     
+    <select id="selectUserDetailTravelPlans" parameterType="com.spring.board.vo.TravelVo" resultMap="travelVo">
+    	SELECT
+    		trave_seq,
+			seq,
+			trave_day,
+			trave_time,
+			trave_city,
+			trave_county,
+			trave_loc,
+			trave_trans,
+			trans_time,
+			use_time,
+			use_expend,
+			trave_detail
+		FROM
+			TRAVE_INFO
+		WHERE
+			seq = #{userSeq}
+    </select>
+    
+    <select id="totalTravelRowNum" resultType="Integer">
+    	SELECT nvl(max(to_number(trave_seq)), 0)
+    	FROM TRAVE_INFO
+    </select>
+    
+    <delete id="deleteUserDetailPlans">
+    	DELETE FROM TRAVE_INFO
+    	WHERE trave_seq in
+   		<foreach collection="array" item="traveSeq" open="(" close=")" separator=",">
+   			#{traveSeq}
+   		</foreach>
+    </delete>
 </mapper>

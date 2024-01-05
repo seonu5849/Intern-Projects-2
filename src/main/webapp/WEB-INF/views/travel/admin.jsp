@@ -95,8 +95,8 @@
 							<td class="user_traveCity">${user.traveCity}</td>
 							<td class="period">${user.period}</td>
 							<td class="user_transport">${user.transport}</td>
-							<td>${user.expend}</td>
-							<td><span class="offered_price"></span></td>
+							<td class="user_expend">${user.expend}</td>
+							<td><span class="offered_price">${user.travelVo[0].useExpend}</span></td>
 						</tr>
 					</c:forEach>
 				</tbody>
@@ -127,8 +127,8 @@
 						<th>지역</th>
 						<th>장소명</th>
 						<th>교통편</th>
-						<th>예상이용시간</th>
-						<th>이동요금(예상지출비용)</th>
+						<th>예상이동시간</th>
+						<th>이용요금(예상지출비용)</th>
 						<th>계획상세</th>
 						<th>교통비</th>
 					</tr>
@@ -139,7 +139,7 @@
 	</template>
 	<template class="template_row">
 		<tr class="plan_row">
-			<td><input type="checkbox" name="seq" class="checkbox"></td>
+			<td><input type="checkbox" name="seq" class="checkbox" value=""></td>
 			<td><input type="time" name="traveTime" class="traveTime"></td>
 			<td>
 				<select name="traveCity" class="traveCity"></select>
@@ -156,7 +156,7 @@
 					<option value="C">자차</option>
 				</select>
 			</td>
-			<td><input type="text" name="transTime" class="transTime"></td>
+			<td><input type="text" name="transTime" class="transTime" placeholder="분으로만 적어주세요."></td>
 			<td><input type="text" name="useExpend" class="useExpend"></td>
 			<td><input type="text" name="traveDetail" class="traveDetail"></td>
 			<td><span class="traveCost">0원</span></td>

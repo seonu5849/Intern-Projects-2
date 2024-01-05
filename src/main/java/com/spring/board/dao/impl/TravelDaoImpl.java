@@ -35,4 +35,19 @@ public class TravelDaoImpl implements TravelDao{
 		return this.sqlSession.insert("travel.mergeTravelPlan", travelVo);
 	}
 
+	@Override
+	public List<TravelVo> selectUserDetailTravelPlans(TravelVo travelVo) throws Exception {
+		return this.sqlSession.selectList("travel.selectUserDetailTravelPlans", travelVo);
+	}
+
+	@Override
+	public Integer totalTravelRowNum() throws Exception {
+		return this.sqlSession.selectOne("travel.totalTravelRowNum");
+	}
+
+	@Override
+	public Integer deleteUserDetailPlans(String[] traveSeqs) throws Exception {
+		return this.sqlSession.delete("travel.deleteUserDetailPlans", traveSeqs);
+	}
+
 }

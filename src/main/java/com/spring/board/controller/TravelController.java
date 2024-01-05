@@ -1,5 +1,6 @@
 package com.spring.board.controller;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,8 @@ import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -105,4 +108,32 @@ public class TravelController {
 		
 		return map;
 	}
+	
+	@ResponseBody
+	@RequestMapping(value="/userDetailPlans.do", method=RequestMethod.GET)
+	public Map<String, Object> userDetailPlans(TravelVo travelVo){
+		log.trace("userDetailPlans({}) invoked.", travelVo);
+		Map<String, Object> map = new HashMap<>();
+		
+		List<TravelVo> travelList = this.travelService.findUserDetailTravelPlans(travelVo);
+		Integer totalTravel = this.travelService.totalTravelRowNum();
+		map.put("list", travelList);
+		map.put("total", totalTravel);
+		
+		return map;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value="/admin.do", method=RequestMethod.DELETE)
+	public ResponseEntity<Map<String, Object>> deleteUserPlans(String[] traveSeqs){
+		log.trace("deleteUserPlans({}) invoked.", Arrays.toString(traveSeqs));
+		Map<String, Object> map = new HashMap<>();
+		
+		Integer affectedRows = this.travelService.deleteUserDetailPlans(traveSeqs);
+		map.put("result", affectedRows);
+		
+		return new ResponseEntity<>(map, HttpStatus.OK);
+	}
+	
+
 }

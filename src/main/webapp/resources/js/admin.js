@@ -1,5 +1,6 @@
 
 $j(document).ready(function(){
+	
 	function replaceUserTransport(){
 		let transports = $j('.user_transport');
 		
@@ -21,7 +22,9 @@ $j(document).ready(function(){
 		}
 		
 	}
+
 	replaceUserTransport();
+	compareEstimatedVsQuote();
 	
 	$j(document).on('input', '.transTime', function() {
 	    let input = $j(this).val();
@@ -110,31 +113,91 @@ function createSubOption(select, main_region){
 		}
 	}
 }
-
+let rowNum;
 function createTempateTable(){
 	let section = $j('#div_table');
 	section.empty();
 	section.append($j('.template_table').prop('content').cloneNode(true));
 	
 	const tbody = $j('.table_trave > tbody');
-	tbody.empty();
-	createTemplateRow(tbody);
-}
+	//tbody.empty();
 	
+	let session = JSON.parse(sessionStorage.getItem('entitys'));
+
+	createTemplateRowSession(tbody, session);
+	
+}
+
+function createTemplateRowSession(tbody, session){
+	let userHasData = false;
+	let validateRows = [];
+	
+	if(sessionStorage.length > 0 ){
+		for(let i=0; i<session.length; i++){
+			let sess = session[i];
+			
+			if(userSeq == sess.userSeq && traveDay == sess.traveDay){
+				userHasData = true;
+				validateRows.push(sess);
+			}
+		}
+		for(let i=0; i<validateRows.length; i++){
+			let sess = validateRows[i];
+			tbody.append($j('.template_row').prop('content').cloneNode(true));
+			for(key of Object.keys(sess)){
+				$j(`[name="${key}"]`).eq(i).val(sess[key]);
+			}
+			
+			print_regions(sess['traveCity']);
+			print_sub_regions();
+		}
+		
+		for(let i=0; i<tbody.find('tr').length; i++){
+			let traveTime = $j(`.traveTime`).eq(i).val();
+			let traveTrans = $j(`.traveTrans`).eq(i).val();
+			let transTime = $j(`.transTime`).eq(i).val();
+			let traveCost = $j(`.traveCost`).eq(i);	
+			
+			let $traveCost = travelCostsCalculate(traveTime, traveTrans, transTime);
+    		traveCost.text(`${$traveCost.toLocaleString()}원`);
+		}
+	}
+	// 현재 회원의 데이터가 없으면 빈 tbody 추가
+	if (!userHasData) {
+	    tbody.append($j('.template_row').prop('content').cloneNode(true));
+	    
+	    if(!$j('[name="seq"]').eq(0).val()){
+			$j(`[name="seq"]`).eq(0).val(rowNum);
+			print_regions(userTraveCity);
+			print_sub_regions();
+			rowNum++;
+		}
+	}
+	
+	
+}
+
 let userTraveCity
 let period;
 function createTemplateRow(tbody){
-	tbody.append($j('.template_row').prop('content').cloneNode(true));
+	let newRows = tbody.append($j('.template_row').prop('content').cloneNode(true));
+
+	let currentRow = $j(tbody).find('tr').length;
+	$j(newRows).find('.checkbox').eq(currentRow-1).val(rowNum);
+	rowNum++;
+    
 	print_regions(userTraveCity);
 	print_sub_regions();
 }
 
 let userSeq;
 $j(document).on('click', '#user_list tbody tr', function(){
+		sessionStorage.clear();
 		let btnDiv = $j('.div_date_btn');
 		
 		btnDiv.empty();
 
+		traveDay = '1';
 		userSeq = $j(this).children().eq(0).find('input[type=hidden]').val();
 		userTraveCity = $j(this).children().eq(2).text();
 		period = $j(this).children().eq(3).text();
@@ -152,24 +215,87 @@ $j(document).on('click', '#user_list tbody tr', function(){
 				btnDiv.append(span);
 			}
 		}
-		
 		$j('.hidden').css('display','block');
-		createTempateTable();
+		getUserDetailPlans(userSeq);	
 });
 
-let traveDay = 1;
-$j(document).on('click', '.date_btn', function(){
-	let $confirm = confirm('저장하지 않고 이동시 데이터가 삭제됩니다.\n이동하시겠습니까?');
+function getUserDetailPlans(userSeq){
+	$j.ajax({
+		type: "GET",
+		url: `/travel/userDetailPlans.do`,
+		data: {
+			userSeq : userSeq,
+			traveDay : traveDay
+		},
+		dataType: "JSON",
+		success: function(data){
+			sessionStorage.setItem('entitys', JSON.stringify(data.list));
+			rowNum = data.total + 1;
+			createTempateTable();
+		},
+		error: function(xhr, error){
+			console.log('Aajx fail message : '+error);
+		}
+	});
+}
+
+let traveDay = '1';
+$j(document).on('click', '.date_btn', function(e){
+	let validate = arrayTravelPlan();
 	
-	if($confirm){
-		$j('.date_btn').removeClass('active');
-		$j(this).addClass('active');
-		traveDay = $j(this).val();
-		console.log(traveDay);
-		
-		createTempateTable();
+	/*for(let i=0; i < validate.length; i++){
+		console.log(i);
+		if(!validateEntityEmpty(validate[i], i) || !validateDayTime(validate[i])){
+			return;
+		}
 	}
+	if(!isTimeRangeOverlap(validate)){
+		return;
+	}*/
+	let sessionData;
+	/*for(let i=0; i<validate.length; i++){
+		let entityKeys = Object.keys(validate[i]);
+		console.log(entityKeys.filter(key => validate[key] !== '').length);
+		for(key of entityKeys){
+			console.log(entityKeys[key]);
+		}
+		if(!(entityKeys.filter(key => validate[key] !== '').length <= 6)){
+			entityKeys.filter(key => console.log(validate[key]));
+			
+		}
+	}*/
+	
+	sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
+	isDuplicateSession(validate, sessionData);
+	console.log(sessionData);
+	
+	
+	$j('.date_btn').removeClass('active');
+	$j(this).addClass('active');
+	traveDay = $j(this).val();
+	
+	createTempateTable();
+	
 });
+
+function isDuplicateSession(validate, sessionData){
+	for (let i = 0; i < validate.length; i++) {
+        const existingIndex = sessionData.findIndex(item =>
+            item.seq == validate[i].seq &&
+            item.userSeq == validate[i].userSeq &&
+            item.traveDay == validate[i].traveDay
+        );
+
+		// 위 조건이 같을 경우 덮어쓰기.
+        if (existingIndex !== -1) {
+            sessionData[existingIndex] = validate[i];
+        } else {
+            sessionData.push(validate[i]);
+        }
+    }
+
+    sessionStorage.setItem('entitys', JSON.stringify(sessionData));
+}
 
 $j(document).on('click', '#add', function(){
 	const tbody = $j('.table_trave > tbody');
@@ -179,15 +305,46 @@ $j(document).on('click', '#add', function(){
 $j(document).on('click', '#del', function(){
 	let checkedArray = [];
 	let checked = $j('.checkbox:checked');
+	let sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
 	
 	for(let i=0; i<checked.length; i++){
 		checked[i].closest('tr').remove();
 		
 		if(checked.val() !== 'on'){
-			checkedArray.push(checked.val());
+			checkedArray.push(checked.eq(i).val());
 		}
 	}
+	for(let i=0; i<sessionData.length; i++){
+		for(let j=0; j<checkedArray.length; j++){
+			if(checkedArray[j] == sessionData[i].seq){
+				sessionData.splice(i, 1);
+			}
+		}
+	}
+	sessionStorage.setItem('entitys', JSON.stringify(sessionData));
+	
 	/*AJAX*/
+	$j.ajax({
+		type: "DELETE",
+		url: `/travel/admin.do?traveSeqs=${checkedArray.join(',')}`,
+		dataType: 'JSON',
+		success: function(data){
+			alert('삭제되었습니다.');
+			let offeredPrice = changeOfferedPriceValue(sessionData);
+			
+			let table = $j('#user_list');
+			let findName = '.userSeq';
+			let comparator = userSeq;
+
+			let foundRow = findRowByValue(table, findName, comparator);
+			foundRow.find('.offered_price').text(offeredPrice);
+			
+			compareEstimatedVsQuote();
+		},
+		error: function(xhr, error){
+			console.log('Ajax fail message : '+error);
+		}
+	})
 	
 });
 
@@ -197,49 +354,44 @@ $j(document).on('change', '.traveTime, .traveTrans, .transTime', function() {
     let traveTime = $j(this).hasClass('traveTime') ? $j(this).val() : $j(this).closest('tr').find('.traveTime').val();
     let traveCost = $j(this).closest('tr').find('.traveCost');
 
-    travelCostsCalculate(traveTime, traveTrans, transTime, traveCost);
+    let $traveCost = travelCostsCalculate(traveTime, traveTrans, transTime);
+    traveCost.text(`${$traveCost.toLocaleString()}원`);
 });
 
-function travelCostsCalculate(traveTime, traveTrans, transTime, traveCost){
-	traveCost.empty();
+function travelCostsCalculate(traveTime, traveTrans, transTime){
+	/*traveCost.empty();*/
 	let $traveCost = 0;
 	let $transTime = transTime.replace('분','');
 
 	switch(traveTrans){
 		case 'B':{
-			console.log('버스');
 			const basicPrice = 1400;
 			$traveCost = busAndSubwaySurchargeCalculator(basicPrice, $transTime);
 			break;
 		}
 		case 'S':{
-			console.log('지하철');
 			const basicPrice = 1450;
 			$traveCost = busAndSubwaySurchargeCalculator(basicPrice, $transTime);
 			break;
 		}
 		case 'T':{
-			console.log('택시');
 			const basicPrice = 3800;
 			$traveCost = taxiSurchargeCalculator(basicPrice, traveTime, $transTime);
 			
 			break;
 		}
 		case 'R':{
-			console.log('렌트');
 			const basicPrice = 100000;
-			$traveCost = rentSurchargeCalculator(basicPrice, transTime);
+			$traveCost = rentSurchargeCalculator(basicPrice, $transTime);
 			break;
 		}
 		case 'C':{
-			console.log('자차');
 			break;
 		}
 		default:{
-			console.log('도보');
 		}
 	}
-	traveCost.text(`${$traveCost.toLocaleString()}원`);
+	return $traveCost;
 }
 
 function busAndSubwaySurchargeCalculator(basicPrice, transTime){ // 버스, 지하철 교통비 할증 로직
@@ -250,9 +402,9 @@ function busAndSubwaySurchargeCalculator(basicPrice, transTime){ // 버스, 지�
 
 function taxiSurchargeCalculator(basicPrice, traveTime, transTime){ // 택시 교통비 할증 로직
 	let $traveCost = basicPrice;
-	
-	$traveCost += Math.floor(transTime / 10) * 5000;
 
+	$traveCost += Math.floor(transTime / 10) * 5000;
+	
 	if(traveTime > '22' && traveTime < '24'){
 		$traveCost = $traveCost + ($traveCost * 0.2);
 	}
@@ -269,25 +421,73 @@ function rentSurchargeCalculator(basicPrice, transTime){ // 랜트 교통비 할
 		$traveCost -= Math.floor(period/2) * 10000;
 	}
 	$traveCost = ($traveCost<70000)?70000:$traveCost; // 7만원 보다 작다면 70000으로 고정
-	
 	$traveCost += Math.floor(transTime / 10) * 500;
 	return $traveCost;
 }
 
 $j(document).on('click', '#submit', function(){
-	let plans = validateArrayEntityEmpty(arrayTravelPlan());
-	console.log(typeof plans);
+	let validate = arrayTravelPlan();
 	
-	console.log(JSON.stringify({plans : plans}));
+	for(let i=0; i < validate.length; i++){
+		if(!validateEntityEmpty(validate[i], i) || !validateDayTime(validate[i])){
+			return;
+		}
+	}
+	if(!isTimeRangeOverlap(validate)){
+		return;
+	}
+	
+	let sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
+	let emptyEntitys = [];
+	let emptyDay = [];
+	for(let i=0; i<sessionData.length; i++){
+		let entityKeys = Object.keys(sessionData[i]);
+		
+		for(let key of entityKeys){
+			if(sessionData[i][key] === ''){
+				emptyDay.push(sessionData[i]['traveDay']);
+				emptyEntitys.push(sessionData[i]['seq']);
+				break;
+			}
+		}
+	}
+	if(emptyEntitys.length > 0){
+		let $confirm = confirm(`${emptyDay.join(',')}일차를 입력하지 않았습니다.\n그래도 저장하시겠습니까?`);
+		
+		if(!$confirm){
+			return;
+		}
+	}
+	
+	for(let i=0; i<sessionData.length; i++){
+		for(let j=0; j<emptyEntitys.length; j++){
+			if(emptyEntitys[j] == sessionData[i].seq){
+				sessionData.splice(i, 1);
+			}
+		}
+	}
+	sessionStorage.setItem('entitys', JSON.stringify(sessionData));
+	
+	isDuplicateSession(validate, sessionData);
+	console.log(sessionData);
+	
 	$j.ajax({
 		type: 'POST',
 		url: '/travel/admin.do',
-		data: JSON.stringify({plans : plans}),
+		data: JSON.stringify({plans : sessionData}),
 		dataType: 'json',
 		contentType: 'application/json',
 		success: function(data){
 			if(data.result === 1){
 				alert('저장완료');
+				let offeredPrice = changeOfferedPriceValue(sessionData);
+				let table = $j('#user_list');
+				let findName = '.userSeq';
+				let comparator = userSeq;
+	
+				let foundRow = findRowByValue(table, findName, comparator);
+				foundRow.find('.offered_price').text(offeredPrice);
+				compareEstimatedVsQuote();
 			}else{
 				alert('저장실패');
 			}
@@ -298,15 +498,26 @@ $j(document).on('click', '#submit', function(){
 	})
 });
 
+function changeOfferedPriceValue(sessionData){
+	let offeredPrice = 0;
+	for(let i=0; i<sessionData.length; i++){
+		let sess = sessionData[i];
+		let $traveCost = travelCostsCalculate(sess.traveTime, sess.traveTrans, sess.transTime);
+		
+		offeredPrice += parseInt($traveCost) + parseInt(sess.useExpend);
+	}
+	return offeredPrice.toLocaleString('ko-KR');
+}
+
+
 function arrayTravelPlan(){ // array plan 생성
 	let arrayPlans = [];
 	
 	$j('.table_trave  tr.plan_row').each(function(){
 		let expend = parseInt($j(this).find('.useExpend').val().replace(/,/g,''));
-		let cost = parseInt($j(this).find('.traveCost').text().replace(/[원,]/g,''));
 		
 		let plan = {
-			seq: $j(this).find('.seq').val(),
+			seq: $j(this).find('.checkbox').val(),
 			userSeq: userSeq,
 			traveDay: traveDay,
 			traveTime: $j(this).find('.traveTime').val(),
@@ -319,32 +530,15 @@ function arrayTravelPlan(){ // array plan 생성
 			traveDetail: $j(this).find('.traveDetail').val()
 		};
 		
-		if(plan.useExpend){
-			let resultCost = (cost === 0) ? '' : cost;
-			plan.useExpend = parseInt(plan.useExpend + resultCost).toLocaleString();
-		}
-		
 		arrayPlans.push(plan);
 	});
 	return arrayPlans;
 }
 
-// 배열을 받아와 하나씩 풀어내면서 조건에 해당된다면 배열에 담지 않고, 만족하지 않으면 배열에 담아서 출력한다.
-function validateArrayEntityEmpty(arrayEntity){
-	let entitys = [];
-	entitys = arrayEntity.filter((entity, i) => {
-	    if (!validateEntityEmpty(entity, i)) {
-	        return false; // 필터링할 요소
-	    }
-	    return true; // 유지할 요소
-	});
-	return entitys;
-}
-
 function validateEntityEmpty(entity, i){
 	let entityKeys = Object.keys(entity);
 	if(entityKeys.filter(key => entity[key] !== '').length < 6){
-		return;
+		return false;
 	}
 	
 	for(let key of entityKeys){
@@ -357,8 +551,85 @@ function validateEntityEmpty(entity, i){
 	return true;
 }
 
-function validateDayTime(traveTime){
-	/*let result = (traveTime >)*/
+// 시간 유효성 검사
+function validateDayTime(plan){
+	const startTime = 7;
+	const endTime = 4;
+	console.log(plan);
+	let hour = parseInt(plan.traveTime.split(':')[0]);
+	
+	if((startTime <= hour && hour <= 23) || (hour >= 0 && hour <= endTime)){
+		return true;
+	}
+	
+	let table = $j('.table_trave');
+	let findName = '[name="seq"]';
+	let comparator = plan.seq;
+	
+	let foundRow = findRowByValue(table, findName, comparator);
+	printAlert('스케쥴은 오전 7시부터 다음날 4시까지 가능합니다.', foundRow.find('.traveTime'));
+	return false;
+}
+
+function isTimeRangeOverlap(plans){
+
+	for(let i=0; i<plans.length; i++){
+		const prevTime = plans[i];
+
+		for(let j=i+1; j<plans.length; j++){
+			const nextTime = plans[j];
+			
+			/* 이전 시간과 다음 시간을 시와 분으로 나눔 */
+			let prevTraveHoursTime = Math.floor(prevTime.transTime.replace('분','')/60);
+			let prevTraveMinuteTime = Math.floor(prevTime.transTime.replace('분','')%60);
+			let nextTraveHoursTime = Math.floor(nextTime.transTime.replace('분','')/60);
+			let nextTraveMinuteTime = Math.floor(nextTime.transTime.replace('분','')%60);
+			
+			/* 시간과 예상이동시간을 시, 분끼리 합하기 및 분이 60분을 넘어가면 1시간으로 시간에 더하기 */
+			let parsePrevHour = parseInt(prevTime.traveTime.split(':')[0]) + prevTraveHoursTime + Math.floor((parseInt(prevTime.traveTime.split(':')[1]) + prevTraveMinuteTime)/60);
+			let parsePrevMinute = Math.floor((parseInt(prevTime.traveTime.split(':')[1]) + prevTraveMinuteTime)%60);
+			let parseNextHour = parseInt(nextTime.traveTime.split(':')[0]) + nextTraveHoursTime + Math.floor((parseInt(nextTime.traveTime.split(':')[1]) + nextTraveMinuteTime)/60);
+			let parseNextMinute = Math.floor((parseInt(nextTime.traveTime.split(':')[1]) + nextTraveMinuteTime)%60);
+			
+			/* 최종적인 이전 출발시간과 도착시간,  다음 출발시간과 도착시간을 구함.*/
+			let prevStartTime = prevTime.traveTime;
+			let prevEndTime = `${parsePrevHour.toString().padStart(2,"0")}:${parsePrevMinute.toString().padStart(2,"0")}`;
+			let nextStartTime = nextTime.traveTime;
+			let nextEndTime = `${parseNextHour.toString().padStart(2,"0")}:${parseNextMinute.toString().padStart(2,"0")}`;
+			
+			/* 조건식에 의해 겹치는지 확인 */
+			if(
+				(
+					(prevStartTime <= nextStartTime) && (prevEndTime >= nextStartTime)
+					||
+					(prevStartTime <= nextEndTime) && (prevEndTime >= nextEndTime)
+				)
+			){
+				let table = $j('.table_trave');
+				let findName = '[name="seq"]';
+				let comparator = nextTime.seq;
+	
+				let foundRow = findRowByValue(table, findName, comparator);
+				printAlert('시간이 겹칩니다.', foundRow.find('.traveTime'));
+				return false;
+			}
+		}
+		
+	}
+	
+	return true;
+}
+
+function findRowByValue(table, findName, comparator){
+	const $table = table;
+	let foundRow = null;
+	$table.find('tbody > tr').each(function(){
+		let key = $j(this).find(findName).val();
+		if(key === comparator){
+			foundRow = $j(this);
+		}
+	});
+	return foundRow;
 }
 
 function searchTopTh(key){
@@ -380,3 +651,21 @@ function printAlert(str, key) {
     }
 }
 
+// 예상경비보다 견적경비가 더 클 경우 빨간색
+function compareEstimatedVsQuote(){
+		let table = $j('#user_list');
+		let rows = table.find('tbody > tr');
+		
+		for(let i=0; i<rows.length; i++){
+			let row = rows.eq(i);
+			let userExpend = row.find('.user_expend');
+			let offeredPrice = row.find('.offered_price');
+			let parseUserExpend = parseInt(userExpend.text().replace(/,/g,''));
+			let parseOfferedPrice = parseInt(offeredPrice.text().replace(/,/g,''));
+
+			if(parseUserExpend < parseOfferedPrice){
+				offeredPrice.css('color','white');
+				offeredPrice.closest('td').css('background-color', 'red');
+			}
+		}
+	}
