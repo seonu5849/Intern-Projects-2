@@ -102,7 +102,7 @@
 				</tbody>
 			</table>
 		</section>
-		<section id="section_btn" class=" hidden">
+		<section id="section_btn" class="hidden">
 			<div class="div_date_btn"></div>
 			<div class="hotkey">
 				<input type="button" id="add" value="추가"> |

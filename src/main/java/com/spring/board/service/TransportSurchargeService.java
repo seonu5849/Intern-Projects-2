@@ -6,7 +6,7 @@ public interface TransportSurchargeService {
 
 	public abstract Integer transportSurchargeCalculator(UserVo userVo) throws Exception;
 	
-	public abstract Integer surchargeTaxi(int traveTime, int transTime) throws Exception;
+	public abstract Integer surchargeTaxi(String[] traveTime, int transMinutes) throws Exception;
 	
 	public abstract Integer surchargeBus(int transTime) throws Exception;
 	

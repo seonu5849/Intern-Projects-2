@@ -1,7 +1,7 @@
 
 $j(document).ready(function(){
-	
-	function replaceUserTransport(){
+
+	$j(function(){
 		let transports = $j('.user_transport');
 		
 		for(let i=0; i<transports.length; i++){
@@ -21,9 +21,8 @@ $j(document).ready(function(){
 			transports.eq(i).text(transport);
 		}
 		
-	}
+	});
 
-	replaceUserTransport();
 	compareEstimatedVsQuote();
 	
 	$j(document).on('input', '.transTime', function() {
@@ -173,8 +172,6 @@ function createTemplateRowSession(tbody, session){
 			rowNum++;
 		}
 	}
-	
-	
 }
 
 let userTraveCity
@@ -216,7 +213,7 @@ $j(document).on('click', '#user_list tbody tr', function(){
 			}
 		}
 		$j('.hidden').css('display','block');
-		getUserDetailPlans(userSeq);	
+		getUserDetailPlans(userSeq);
 });
 
 function getUserDetailPlans(userSeq){
@@ -242,28 +239,7 @@ function getUserDetailPlans(userSeq){
 let traveDay = '1';
 $j(document).on('click', '.date_btn', function(e){
 	let validate = arrayTravelPlan();
-	
-	/*for(let i=0; i < validate.length; i++){
-		console.log(i);
-		if(!validateEntityEmpty(validate[i], i) || !validateDayTime(validate[i])){
-			return;
-		}
-	}
-	if(!isTimeRangeOverlap(validate)){
-		return;
-	}*/
 	let sessionData;
-	/*for(let i=0; i<validate.length; i++){
-		let entityKeys = Object.keys(validate[i]);
-		console.log(entityKeys.filter(key => validate[key] !== '').length);
-		for(key of entityKeys){
-			console.log(entityKeys[key]);
-		}
-		if(!(entityKeys.filter(key => validate[key] !== '').length <= 6)){
-			entityKeys.filter(key => console.log(validate[key]));
-			
-		}
-	}*/
 	
 	sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
 	isDuplicateSession(validate, sessionData);
@@ -330,21 +306,45 @@ $j(document).on('click', '#del', function(){
 		dataType: 'JSON',
 		success: function(data){
 			alert('삭제되었습니다.');
-			let offeredPrice = changeOfferedPriceValue(sessionData);
 			
-			let table = $j('#user_list');
-			let findName = '.userSeq';
-			let comparator = userSeq;
-
-			let foundRow = findRowByValue(table, findName, comparator);
-			foundRow.find('.offered_price').text(offeredPrice);
-			
-			compareEstimatedVsQuote();
 		},
 		error: function(xhr, error){
 			console.log('Ajax fail message : '+error);
 		}
 	})
+	
+	let emptyEntitys = [];
+	for (let data of sessionData) {
+	    if (Object.values(data).some(value => value === '')) {
+	        emptyEntitys.push(parseInt(data['seq']));
+	    }
+	}
+	for(let i=0; i<sessionData.length; i++){
+		let sess = sessionData[i]
+		for(let j=0; j<emptyEntitys.length; j++){
+			if(emptyEntitys[j] == sess.seq){
+				sessionData.splice(i, 1);
+			}
+		}
+	}
+	sessionStorage.setItem('entitys', sessionData);
+	
+	let offeredPrice = changeOfferedPriceValue(sessionData);
+	console.log(offeredPrice);
+	let table = $j('#user_list');
+	let findName = '.userSeq';
+	let comparator = userSeq;
+
+	let foundRow = findRowByValue(table, findName, comparator);
+	foundRow.find('.offered_price').text(offeredPrice);
+	
+	compareEstimatedVsQuote();
+	
+	// 행을 삭제했는데 만약 행이 하나도 남지 않을 겨웅엔 1개를 생성해준다.
+	if($j('.table_trave').find('tbody > tr').length < 1){
+		const tbody = $j('.table_trave > tbody');
+		createTemplateRow(tbody);
+	}
 	
 });
 
@@ -396,22 +396,61 @@ function travelCostsCalculate(traveTime, traveTrans, transTime){
 
 function busAndSubwaySurchargeCalculator(basicPrice, transTime){ // 버스, 지하철 교통비 할증 로직
 	let $traveCost = basicPrice;
-	$traveCost += Math.floor(transTime / 20) * 200;
+	$traveCost += Math.floor(((transTime>20)?transTime:0) / 20) * 200;
 	return $traveCost;
 }
 
 function taxiSurchargeCalculator(basicPrice, traveTime, transTime){ // 택시 교통비 할증 로직
-	let $traveCost = basicPrice;
-
-	$traveCost += Math.floor(transTime / 10) * 5000;
+	const preMidnightSurcharge = 1.2;
+	const pastMidnihtSurcharge = 1.4;
+	let result = Math.floor(transTime / 10) * 5000;
 	
-	if(traveTime > '22' && traveTime < '24'){
-		$traveCost = $traveCost + ($traveCost * 0.2);
+	let startTime = correctStartTimeForOvernight(traveTime);
+	let $transTime = convertMinutesToTime(transTime);
+	let endTime = calculateArrivalTimeByDistance(startTime, $transTime);
+
+	if(startTime >= '22' && endTime <= '28'){
+		if(startTime >= '24'){
+			result *= pastMidnihtSurcharge;
+		}else{
+			if(endTime >= '24'){
+				let minutesBeforeMidnight = 60 - parseInt(startTime.split(':')[1]);
+				let minutesAfterMidnight = ((parseInt(endTime.split(':')[0])-24) * 60) + parseInt(endTime.split(':')[1]);
+				let beforeResult = (Math.floor(minutesBeforeMidnight / 10) * 5000) * preMidnightSurcharge;
+				let afterResult = (Math.floor(minutesAfterMidnight / 10) * 5000) * pastMidnihtSurcharge;
+				return basicPrice + beforeResult + afterResult;
+			}else{
+				result *= preMidnightSurcharge;
+			}
+		}
 	}
-	if(traveTime > '00' && traveTime < '04'){
-		$traveCost = $traveCost + ($traveCost * 0.4);
-	}
-	return $traveCost;
+	
+	return basicPrice + result;
+}
+function correctStartTimeForOvernight(startTime){
+	let hours = parseInt(startTime.split(':')[0]);
+	let minutes = parseInt(startTime.split(':')[1]);
+	
+	return `${(hours < 4)?hours+24:hours}:${minutes}`;
+}
+
+function convertMinutesToTime(minutes){
+	let hours = Math.floor(minutes / 60);
+	let remainingMinutes = minutes % 60;
+	
+	return `${hours}:${remainingMinutes}`;
+}
+
+function calculateArrivalTimeByDistance(startTime, transTime){
+	let $startTime = startTime.split(':');
+	let $transTime = transTime.split(':');
+
+	let hours = parseInt($startTime[0]) + 
+					parseInt($transTime[0]) + 
+						Math.floor((parseInt($startTime[1]) + parseInt($transTime[1]))/60);
+	let minutes = (parseInt($startTime[1]) + parseInt($transTime[1])) % 60;
+	
+	return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}`;
 }
 
 function rentSurchargeCalculator(basicPrice, transTime){ // 랜트 교통비 할증 로직
@@ -438,30 +477,52 @@ $j(document).on('click', '#submit', function(){
 	}
 	
 	let sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
-	let emptyEntitys = [];
 	let emptyDay = [];
+	let bool = true;
+	let fullEntitysSet = new Set();
+	let emptySeq = [];
+	
+	/*for (let data of sessionData) {
+	    if (Object.values(data).every(value => value !== '')) {
+	        console.log(parseInt(data['traveDay']));
+	    }
+	}*/
+	
+	
 	for(let i=0; i<sessionData.length; i++){
 		let entityKeys = Object.keys(sessionData[i]);
 		
 		for(let key of entityKeys){
 			if(sessionData[i][key] === ''){
-				emptyDay.push(sessionData[i]['traveDay']);
-				emptyEntitys.push(sessionData[i]['seq']);
-				break;
+				bool = false;
+				//break;
 			}
 		}
+		if(bool){
+			fullEntitysSet.add(parseInt(sessionData[i]['traveDay']));
+		}else{
+			emptySeq.push(sessionData[i]['seq']);
+		}
+		
 	}
-	if(emptyEntitys.length > 0){
-		let $confirm = confirm(`${emptyDay.join(',')}일차를 입력하지 않았습니다.\n그래도 저장하시겠습니까?`);
+
+	for(let i=1; i<=period; i++){
+		if(!fullEntitysSet.has(i)){
+			emptyDay.push(i);
+		}
+	}
+	
+	if(emptyDay.length > 0){
+		let $confirm = confirm(`${emptyDay.toString()}일차를 입력하지 않았습니다.\n그래도 저장하시겠습니까?`);
 		
 		if(!$confirm){
 			return;
 		}
 	}
-	
+
 	for(let i=0; i<sessionData.length; i++){
-		for(let j=0; j<emptyEntitys.length; j++){
-			if(emptyEntitys[j] == sessionData[i].seq){
+		for(let j=0; j<emptySeq.length; j++){
+			if(emptySeq[j] == sessionData[i].seq){
 				sessionData.splice(i, 1);
 			}
 		}
@@ -553,22 +614,28 @@ function validateEntityEmpty(entity, i){
 
 // 시간 유효성 검사
 function validateDayTime(plan){
-	const startTime = 7;
-	const endTime = 4;
-	console.log(plan);
-	let hour = parseInt(plan.traveTime.split(':')[0]);
-	
-	if((startTime <= hour && hour <= 23) || (hour >= 0 && hour <= endTime)){
-		return true;
+	const openTime = 7;
+	const closeTime = 28;
+
+	let startHour = (parseInt(plan.traveTime.split(':')[0]) < 4)?parseInt(plan.traveTime.split(':')[0])+24:parseInt(plan.traveTime.split(':')[0]);
+	let endHour = startHour + ((parseInt(plan.traveTime.split(':')[1]) + parseInt(plan.transTime.replace('분', ''))) / 60);
+
+	if(
+		!(
+			(openTime <= startHour) && (closeTime > startHour)
+			&&
+			(openTime <= endHour) && (closeTime > endHour)
+		)
+	){
+		let table = $j('.table_trave');
+		let findName = '[name="seq"]';
+		let comparator = plan.seq;
+		
+		let foundRow = findRowByValue(table, findName, comparator);
+		printAlert('스케쥴은 오전 7시부터 다음날 4시까지 가능합니다.', foundRow.find('.traveTime'));
+		return false;
 	}
-	
-	let table = $j('.table_trave');
-	let findName = '[name="seq"]';
-	let comparator = plan.seq;
-	
-	let foundRow = findRowByValue(table, findName, comparator);
-	printAlert('스케쥴은 오전 7시부터 다음날 4시까지 가능합니다.', foundRow.find('.traveTime'));
-	return false;
+	return true;
 }
 
 function isTimeRangeOverlap(plans){
@@ -579,30 +646,24 @@ function isTimeRangeOverlap(plans){
 		for(let j=i+1; j<plans.length; j++){
 			const nextTime = plans[j];
 			
-			/* 이전 시간과 다음 시간을 시와 분으로 나눔 */
-			let prevTraveHoursTime = Math.floor(prevTime.transTime.replace('분','')/60);
-			let prevTraveMinuteTime = Math.floor(prevTime.transTime.replace('분','')%60);
-			let nextTraveHoursTime = Math.floor(nextTime.transTime.replace('분','')/60);
-			let nextTraveMinuteTime = Math.floor(nextTime.transTime.replace('분','')%60);
+			let prevStartTime = parseFloat(prevTime.traveTime.replace(':','.'));
+			let nextStartTime = parseFloat(nextTime.traveTime.replace(':','.'));
+			let prevEndTime = parseFloat(prevTime.traveTime.split(':')[0]) + (parseInt(prevTime.traveTime.split(':')[1]) + parseInt(prevTime.transTime.replace('분','')))/60;
+			let nextEndTime = parseFloat(nextTime.traveTime.split(':')[0]) + (parseInt(nextTime.traveTime.split(':')[1]) + parseInt(nextTime.transTime.replace('분','')))/60;
 			
-			/* 시간과 예상이동시간을 시, 분끼리 합하기 및 분이 60분을 넘어가면 1시간으로 시간에 더하기 */
-			let parsePrevHour = parseInt(prevTime.traveTime.split(':')[0]) + prevTraveHoursTime + Math.floor((parseInt(prevTime.traveTime.split(':')[1]) + prevTraveMinuteTime)/60);
-			let parsePrevMinute = Math.floor((parseInt(prevTime.traveTime.split(':')[1]) + prevTraveMinuteTime)%60);
-			let parseNextHour = parseInt(nextTime.traveTime.split(':')[0]) + nextTraveHoursTime + Math.floor((parseInt(nextTime.traveTime.split(':')[1]) + nextTraveMinuteTime)/60);
-			let parseNextMinute = Math.floor((parseInt(nextTime.traveTime.split(':')[1]) + nextTraveMinuteTime)%60);
-			
-			/* 최종적인 이전 출발시간과 도착시간,  다음 출발시간과 도착시간을 구함.*/
-			let prevStartTime = prevTime.traveTime;
-			let prevEndTime = `${parsePrevHour.toString().padStart(2,"0")}:${parsePrevMinute.toString().padStart(2,"0")}`;
-			let nextStartTime = nextTime.traveTime;
-			let nextEndTime = `${parseNextHour.toString().padStart(2,"0")}:${parseNextMinute.toString().padStart(2,"0")}`;
-			
+			let timeArray = [prevStartTime, nextStartTime, prevEndTime, nextEndTime];
+			for(let i = 0; i < timeArray.length; i++){
+			    if(timeArray[i] < 4){
+			        timeArray[i] += 24;
+			    }
+			}
+
 			/* 조건식에 의해 겹치는지 확인 */
 			if(
 				(
-					(prevStartTime <= nextStartTime) && (prevEndTime >= nextStartTime)
+					(timeArray[0] <= timeArray[1]) && (timeArray[2] >= timeArray[1])
 					||
-					(prevStartTime <= nextEndTime) && (prevEndTime >= nextEndTime)
+					(timeArray[0] <= timeArray[3]) && (timeArray[2] >= timeArray[3])
 				)
 			){
 				let table = $j('.table_trave');

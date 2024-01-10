@@ -113,4 +113,16 @@ public class TravelServiceImpl implements TravelService {
 		return affectedRows;
 	}
 
+	@Override
+	public UserVo findUserDetail(UserVo userVo) {
+		UserVo findUser = null;
+		
+		try {
+			findUser = this.TravelDao.selectUserDetail(userVo);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return findUser;
+	}
+
 }

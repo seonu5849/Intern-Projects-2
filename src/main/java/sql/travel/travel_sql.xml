@@ -52,16 +52,6 @@
     </insert>
     
     <select id="selectRequestUseerList" resultMap="userVo">
-    	<!-- SELECT
-    		SEQ,
-			USER_NAME,
-			USER_PHONE,
-			TRAVE_CITY,
-			PERIOD,
-			EXPEND,
-			TRANSPORT
-		FROM
-			CLIENT_INFO -->
 		select 
 		    t1.SEQ,
 		    t1.USER_NAME,
@@ -142,4 +132,20 @@
    			#{traveSeq}
    		</foreach>
     </delete>
+    
+    <select id="selectUserDetail" parameterType="com.spring.board.vo.UserVo" resultMap="userVo">
+    	SELECT
+    		SEQ,
+			USER_NAME,
+			USER_PHONE,
+			TRAVE_CITY,
+			PERIOD,
+			EXPEND,
+			TRANSPORT
+		FROM
+			client_info
+		WHERE
+			USER_NAME = #{name}
+			AND USER_PHONE = #{phone}
+    </select>
 </mapper>

@@ -64,7 +64,13 @@ public class TravelController {
 		log.info("userVo: {}", userVo);
 		
 		if(userVo != null) {
-			model.addAttribute("user", userVo);
+			UserVo findUser = this.travelService.findUserDetail(userVo);
+			
+			if(findUser != null) {
+				model.addAttribute("user", findUser);
+			}else {
+				model.addAttribute("user", userVo);
+			}
 		}else {
 			return "redirect:/travel/login.do";
 		}
@@ -133,6 +139,18 @@ public class TravelController {
 		map.put("result", affectedRows);
 		
 		return new ResponseEntity<>(map, HttpStatus.OK);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value="/logout.do", method=RequestMethod.POST)
+	public Map<String, String> logoutAction(HttpSession session){
+		log.trace("logoutAction() invoked.");
+		
+		Map<String, String> map = new HashMap<>();
+		session.invalidate();
+		map.put("redirect", "/travel/login.do");
+		
+		return map;
 	}
 	
 

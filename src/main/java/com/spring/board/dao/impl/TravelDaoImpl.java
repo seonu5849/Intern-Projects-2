@@ -50,4 +50,9 @@ public class TravelDaoImpl implements TravelDao{
 		return this.sqlSession.delete("travel.deleteUserDetailPlans", traveSeqs);
 	}
 
+	@Override
+	public UserVo selectUserDetail(UserVo userVo) throws Exception {
+		return this.sqlSession.selectOne("travel.selectUserDetail", userVo);
+	}
+
 }

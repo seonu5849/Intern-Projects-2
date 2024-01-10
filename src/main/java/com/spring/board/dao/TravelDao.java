@@ -18,4 +18,6 @@ public interface TravelDao {
 	public abstract Integer totalTravelRowNum() throws Exception;
 	
 	public abstract Integer deleteUserDetailPlans(String[] traveSeqs) throws Exception;
+
+	public abstract UserVo selectUserDetail(UserVo userVo) throws Exception;
 }

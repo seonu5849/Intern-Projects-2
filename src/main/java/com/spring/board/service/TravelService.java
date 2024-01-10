@@ -19,4 +19,6 @@ public interface TravelService {
 	
 	public abstract Integer deleteUserDetailPlans(String[] traveSeqs);
 	
+	public abstract UserVo findUserDetail(UserVo userVo);
+	
 }

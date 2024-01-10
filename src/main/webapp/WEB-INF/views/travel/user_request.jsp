@@ -5,6 +5,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="/resources/js/userRequest.js"></script>
 <title>request</title>
 <style>
 	*{
@@ -16,16 +17,17 @@
 		height: 100vh;
 	}
 	.container .user_request {
-		position: absolute;
-		top:50%;
-		left:50%;
-		transform: translate(-50%, -50%);
+		margin: auto;
+		margin-top: 50px;
 		border: 1px solid black;
 
 		font-weight: bold;
 	}
 	.container .user_request td:nth-child(1){
 		text-align: center;
+	}
+	.container .center {
+		margin: auto;
 	}
 	.user_request > tr, th, td {
 		border: 1px solid black;
@@ -36,12 +38,31 @@
 	input::placeholder {
 		text-align: center;
 	}
-
+	.div_date_btn{
+		width: 100%;
+	}
+	.div_date_btn > .date_btn {
+		padding: 3px 5px;
+		margin: 5px;
+		border: 1px solid black;
+	}
+	.div_date_btn > .date_btn:hover {
+		background-color: rgba(51, 102, 153, 0.3);
+		border: 1px solid rgba(51, 102, 153, 0.6);
+	}
+	.hidden{
+		display: none;
+	}
+	.active {
+		background-color: #336699;
+		color: #fff;
+	}
 </style>
 </head>
 <body>
 	<div class="container">
 		<form class="requestForm">
+			<input type="hidden" name="seq" id="seq" value="${user.seq}"/>
 			<table class="user_request">
 				<tr>
 					<th>
@@ -64,7 +85,7 @@
 						<label for="transport">여행기간</label>
 					</th>
 					<td>
-						<input type="text" name="period" id="period" placeholder="여행기간은 1~30 중에서만 입력해주세요."/>
+						<input type="text" name="period" id="period" placeholder="여행기간은 1~30 중에서만 입력해주세요." value="${user.period}"/>
 					</td>
 				</tr>
 				<tr>
@@ -72,6 +93,7 @@
 						<label for="transport">이동수단</label>
 					</th>
 					<td>
+						<input type="hidden" id="userTransport" value="${user.transport}"/>
 						<select name="transport" id="transport">
 							<option value="R">렌트</option>
 							<option value="B">대중교통</option>
@@ -84,7 +106,7 @@
 						<label for="expend">예상경비</label>
 					</th>
 					<td>
-						<input type="text" name="expend" id="expend" maxlength="13" placeholder="숫자만 입력해주세요."/>
+						<input type="text" name="expend" id="expend" maxlength="13" placeholder="숫자만 입력해주세요." value="${user.expend}"/>
 					</td>
 				</tr>
 				<tr>
@@ -92,6 +114,7 @@
 						<label for="traveCity">여행지</label>
 					</th>
 					<td>
+						<input type="hidden" id="userTraveCity" value="${user.traveCity}"/>
 						<select name="traveCity" id="traveCity">
 
 						</select>
@@ -99,157 +122,69 @@
 				</tr>
 				<tr>
 					<td colspan="2">
-						<input type="button" id="submit" value="신청"/>
+						<c:if test="${user.seq != null}">
+							<input type="button" id="logout" value="로그아웃"/>
+						</c:if>
+						<c:if test="${user.seq == null}">
+							<input type="button" id="submit" value="신청"/>
+						</c:if>
 					</td>
 				</tr>
 			</table>
 		</form>
+		<session id="session_btn" class="hidden">
+			<div class="div_date_btn"></div>
+			<div class="hotkey">
+				<input type="button" id="edit" value="수정요청">
+			</div>
+		</session>
+		<section id="session_trave" class="hidden">
+			<div id="div_table"></div>
+		</section>
 	</div>
-	<script>
-		$j(document).ready(function(){
-			const regions = {
-				'서울특별시': ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
-				'인천광역시': ["계양구", "남동구", "동구", "미추홀구", "부평구", "서구", "연수구", "중구"],
-				'부산광역시': ["강서구", "금정구", "남구", "동구", "동래구", "부산진구", "북구", "사상구", "사하구", "서구", "수영구", "연제구", "영도구", "중구", "해운대구"],
-				'대전광역시': ["대덕구", "동구", "서구", "유성구", "중구"],
-				'대구광역시': ["남구", "달서구", "달서군", "동구", "북구", "서구", "수성구", "중구"],
-				'울산광역시': ["남구", "동구", "북구", "중구", "울주군"],
-				'광주광역시': ["광산구", "남구", "동구", "북구", "서구"],
-				'제주특별자치도': ["서귀포시", "제주시"],
-				'세종특별자치시': ["세종특별자치시"],
-				'경기도': ["고양시", "과천시", "광명시", "광주시", "구리시", "군포시", "김포시", "남양주시", "동두천시", "부천시", "성남시", "수원시", "시흥시", "안산시", "안성시", "안양시", "양주시", "여주시", "오산시", "용인시", "의왕시", "의정부시", "이천시", "파주시", "평택시", "포천시", "하남시", "화성시", "가평군", "양평군", "연천군"],
-				'강원도': ["강릉시", "동해시", "삼척시", "속초시", "원주시", "춘천시", "태백시", "고성군", "양구군", "양양군", "영월군", "인제군", "정선군", "철원군", "평창군", "홍천군", "화천군", "횡성군"],
-				'충청북도': ["제천시", "청주시", "충주시", "괴산군", "단양군", "보은군", "영동군", "옥천군", "음성군", "증평군", "진천군"],
-				'충청남도': ["계룡시", "공주시", "논산시", "당진시", "보령시", "서산시", "아산시", "천안시", "금산군", "부여군", "서천군", "예산군", "청양군", "태안군", "홍성군"],
-				'경상북도': ["경산시", "경주시", "구미시", "김천시", "문경시", "상주시", "안동시", "영주시", "영천시", "포항시", "고령군", "군위군", "봉화군", "성주군", "영덕군", "영양군", "예천군", "울릉군", "울진군", "의성군", "청도군", "청송군", "칠곡군"],
-				'경상남도': ["거제시", "김해시", "밀양시", "사천시", "양산시", "진주시", "창원시", "통영시", "거창군", "고성군", "남해군", "산청군", "의령군", "창녕군", "하동군", "함안군", "함양군", "합천군"],
-				'전라북도': ["군산시", "김제시", "남원시", "익산시", "전주시", "정읍시", "고창군", "무주군", "부안군", "순창군", "완주군", "임실군", "장수군", "진안군"],
-				'전라남도': ["광양시", "나주시", "목포시", "순천시", "여수시", "강진군", "고흥군", "곡성군", "구례군", "담양군", "무안군", "보성군", "신안군", "영광군", "영암군", "완도군", "장성군", "장흥군", "진도군", "함평군", "해남군", "화순군"]
-			};
-
-			function print_regions(){
-				const select = $j('#traveCity');
-				
-				for(region in regions){
-					let option = $j('<option>');
-					option.text(region);
-					select.append(option);
-				}
-			}
-			print_regions();
-			
-			$j('#name').on('input', function(){
-				let input = $j(this).val();
-				let regex = /[a-zA-Z0-9]/g;
-
-				let value = input.replace(regex, '');
-				$j(this).val(value);
-			});
-
-			$j('#phone').on('input', function(){
-				let input = $j(this).val();
-				let regex = /[^0-9]/g;
-
-				let value = input.replace(regex, '');
-				if(value.length > 3){
-					value = value.slice(0,3)+"-"+value.slice(3);
-				}
-				if(value.length > 8){
-					value = value.slice(0,8)+"-"+value.slice(8);
-				}
-					
-				$j(this).val(value);
-			});
-
-			$j('#period').on('input', function(){
-				let input = $j(this).val();
-				let regex = /[^0-9]/g;
-				
-				let value = input.replace(regex, '');
-				$j(this).val(value);
-			});
-			
-			$j('#expend').on('input', function(){
-				let input = $j(this).val();
-				let regex = /[^0-9]/g;
-
-				let value = input.replace(regex, '');
-				let formattedNumber = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-				
-				$j(this).val(formattedNumber);
-			});
-
-		});
-
-		$j('#submit').on('click', function(){
-				let user = {
-					name : $j('#name').val(),
-					phone : $j('#phone').val(),
-					period : $j('#period').val(),
-					transport : $j('#transport').val(),
-					expend : $j('#expend').val(),
-					traveCity : $j('#traveCity').val()
-				};
-				validateEmptyField(user)
-				if(!validateEmptyField(user) || !validatePeriod(user)){
-					return;
-				}
-				
-				$j.ajax({
-					type: "POST",
-					url: "/travel/userRequest.do",
-					data: JSON.stringify(user),
-					dataType: "json",
-					contentType: "application/json; charset=UTF-8",
-					success: function(data){
-						if(data.result){
-							alert("신청되셨습니다.");
-							location.href="/travel/login.do";
-						}else{
-							alert("신청이 실패했습니다. 다시 확인해주세요.");
-						}
-					},
-					error: function(xhr, error){
-						console.log('Ajax fail message: '+error);
-					}
-				});
-			});
-		
-		/* 유효성 검증 영역 */
-		function validatePeriod(user){ // 여행기간 1~30
-			let period = user.period;
-			if(period < 1 || period > 30){
-				printAlert('여행기간은 1~30일 중에서만 입력해주세요.', 'period');
-				return false;
-			}
-			return true;
-		}
-		
-		function validateEmptyField(user){
-			let keys = Object.keys(user);
-			for(let key of keys){
-				if(user[key] === '' || user[key] === undefined){
-					let topTh = searchTopTh(key);
-					printAlert('"'+topTh+'" 란을 입력하지 않았습니다.', key);
-					return false;
-				}
-			}
-			return true;
-		}
-		
-		function searchTopTh(key){
-			let table = $j('#'+key).closest('table');
-			let row = $j('#'+key).closest('tr').index();
-			let topTh = table.find('th label').eq(row).text();
-			return topTh;
-		}
-		
-		/* alert 출력 및 focus */
-		function printAlert(str, key){
-			alert(str);
-			$j('#'+key).focus();
-			
-		}
-	</script>
+	<template class="template_table">
+		<table class="table_trave center">
+				<thead>
+					<tr>
+						<th></th>
+						<th>시간</th>
+						<th>지역</th>
+						<th>장소명</th>
+						<th>교통편</th>
+						<th>예상이동시간</th>
+						<th>이용요금(예상지출비용)</th>
+						<th>계획상세</th>
+						<th>교통비</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+	</template>
+	<template class="template_row">
+		<tr class="plan_row">
+			<td><input type="checkbox" name="seq" class="checkbox" value=""></td>
+			<td><input type="time" name="traveTime" class="traveTime"></td>
+			<td>
+				<select name="traveCity" class="traveCity"></select>
+				<select name="traveCounty" class="traveCounty"></select>
+			</td>
+			<td><input type="text" name="traveLoc" class="traveLoc"></td>
+			<td>
+				<select name="traveTrans" class="traveTrans">
+					<option value="W">도보</option>
+					<option value="B">버스</option>
+					<option value="S">지하철</option>
+					<option value="T">택시</option>
+					<option value="R">렌트</option>
+					<option value="C">자차</option>
+				</select>
+			</td>
+			<td><input type="text" name="transTime" class="transTime" placeholder="분으로만 적어주세요."></td>
+			<td><input type="text" name="useExpend" class="useExpend"></td>
+			<td><input type="text" name="traveDetail" class="traveDetail"></td>
+			<td><span class="traveCost">0원</span></td>
+		</tr>
+	</template>
 </body>
 </html>
