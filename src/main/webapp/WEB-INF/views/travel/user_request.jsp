@@ -57,6 +57,9 @@
 		background-color: #336699;
 		color: #fff;
 	}
+	input[type=checkbox] {
+		cursor: pointer;
+	}
 </style>
 </head>
 <body>
@@ -163,7 +166,10 @@
 	</template>
 	<template class="template_row">
 		<tr class="plan_row">
-			<td><input type="checkbox" name="seq" class="checkbox" value=""></td>
+			<td>
+				<input type="hidden" name="request" class="request"/>
+				<input type="checkbox" name="seq" class="checkbox" value="">
+			</td>
 			<td><input type="time" name="traveTime" class="traveTime"></td>
 			<td>
 				<select name="traveCity" class="traveCity"></select>

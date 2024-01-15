@@ -1,5 +1,4 @@
 $j(document).ready(function(){
-	
 
 	$j(function(){
 		const select = $j('#traveCity');
@@ -11,7 +10,7 @@ $j(document).ready(function(){
 		}
 	});
 	
-	$j('#name').on('input', function(){
+	$j('#name').on('input', () => {
 		let input = $j(this).val();
 		let regex = /[a-zA-Z0-9]/g;
 
@@ -19,7 +18,7 @@ $j(document).ready(function(){
 		$j(this).val(value);
 	});
 
-	$j('#phone').on('input', function(){
+	$j('#phone').on('input', () => {
 		let input = $j(this).val();
 		let regex = /[^0-9]/g;
 
@@ -34,7 +33,7 @@ $j(document).ready(function(){
 		$j(this).val(value);
 	});
 
-	$j('#period').on('input', function(){
+	$j('#period').on('input', () => {
 		let input = $j(this).val();
 		let regex = /[^0-9]/g;
 		
@@ -42,7 +41,7 @@ $j(document).ready(function(){
 		$j(this).val(value);
 	});
 	
-	$j('#expend').on('input', function(){
+	$j('#expend').on('input', () => {
 		let input = $j(this).val();
 		let regex = /[^0-9]/g;
 
@@ -55,14 +54,14 @@ $j(document).ready(function(){
 	if($j('#seq').val() !== ''){
 		$j('.hidden').css('display','block');
 		
-		$j('#transport > option').each(function(){
+		$j('#transport > option').each(() => {
 			if($j('#userTransport').val() === $j(this).val()){
 				$j(this).prop('selected',true);
 			}	
 		});
 		
-		$j('#traveCity > option').each(function(){
-			if($j('#userTraveCity').val() === $j(this).val()){
+		$j('#traveCity > option').each(() => {
+			if($j('.user_request #userTraveCity').val() === $j(this).val()){
 				$j(this).prop('selected',true);
 			}
 		});
@@ -84,6 +83,47 @@ $j(document).ready(function(){
 		}
 		loadUserDetailPlans();
 	}
+	
+	$j(document).on('click', '#edit' ,() => {
+		let checkedArray = [];
+		const table = $j('.table_trave');
+		const rows = table.find('tbody tr.plan_row');
+
+		rows.each(function() {
+			let row = $j(this);
+			let seq = row.find('[name="seq"]:checked');
+			
+			if(seq.val() !== undefined){
+				checkedArray.push(seq.val());
+			}
+		});
+		
+		if(checkedArray.length <= 0){
+			alert('선택된 항목이 없습니다.\n항목을 선택 후 다시 시도해주세요.');
+			return;
+		}
+		const test = {
+			travelSeqs: checkedArray,
+			userSeq: $j('#seq').val()
+		};
+		console.log(test);
+		
+		$j.ajax({
+			type: "PUT",
+			url: `/travel/editRequest.do?travelSeqs=${checkedArray}&userSeq=${$j('#seq').val()}`,
+			success: function(data){
+				if(data === 'SUCCESS'){
+					alert('괸리자에게 수정 요청을 보냈습니다.');
+				}else{
+					alert('수정 요청을 실패했습니다.');
+				}
+			},
+			error: function(xhr, error){
+				console.log('Ajax fail message : '+error);
+			}
+		});
+		
+	})
 	
 });
 const regions = {
@@ -122,11 +162,27 @@ function loadUserDetailPlans(){
 		success: function(data){
 			sessionStorage.setItem('entitys', JSON.stringify(data.list));
 			createTempateTable();
+			disabledCheckbox();
 		},
 		error: function(xhr, error){
 			console.log('Aajx fail message : '+error);
 		}
 	});
+}
+
+function disabledCheckbox(){
+	const table = $j('.table_trave');
+	const rows = table.find('tbody tr');
+
+	rows.each(function(){
+		if($j(this).find('.request').val() === 'M'){
+			$j(this).find('.checkbox').attr({
+				checked: true,
+				disabled: true
+			});
+			
+		}
+	})
 }
 
 function createTempateTable(){
@@ -159,7 +215,7 @@ function createTemplateRowSession(tbody, session){
 			let sess = validateRows[i];
 			tbody.append($j('.template_row').prop('content').cloneNode(true));
 			for(key of Object.keys(sess)){
-				$j(`[name="${key}"]`).eq(i).val(sess[key]);
+				$j(`.table_trave [name="${key}"]`).eq(i).val(sess[key]);
 			}
 			
 			print_regions(sess['traveCity']);
@@ -180,9 +236,8 @@ function createTemplateRowSession(tbody, session){
 	if (!userHasData) {
 	    tbody.append($j('.template_row').prop('content').cloneNode(true));
 	    
-	    if(!$j('[name="seq"]').eq(0).val()){
-			$j(`[name="seq"]`).eq(0).val(rowNum);
-			print_regions(userTraveCity);
+	    if($j('[name="seq"]').eq(0).val() !== ''){
+			print_regions($j('#userTraveCity').val());
 			print_sub_regions();
 		}
 	}
@@ -222,15 +277,11 @@ function createSubOption(select, main_region){
 }
 
 let traveDay = '1';
-$j(document).on('click', '.date_btn', function(e){
-	let sessionData;
-	
-	sessionData = JSON.parse(sessionStorage.getItem('entitys')) || [];
-	
+$j(document).on('click', '.date_btn', function(e) {
 	$j('.date_btn').removeClass('active');
 	$j(this).addClass('active');
 	traveDay = $j(this).val();
-	
+
 	createTempateTable();
 	
 });

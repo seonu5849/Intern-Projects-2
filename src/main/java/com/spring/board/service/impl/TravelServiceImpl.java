@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.spring.board.dao.TravelDao;
 import com.spring.board.service.TransportSurchargeService;
 import com.spring.board.service.TravelService;
+import com.spring.board.vo.EditRequest;
 import com.spring.board.vo.TravelVo;
 import com.spring.board.vo.UserVo;
 
@@ -65,9 +66,16 @@ public class TravelServiceImpl implements TravelService {
 		Integer affectedRows = null;
 		
 		try {
-			for(TravelVo plan : planList) {
-				log.info(plan.toString());
-				affectedRows = this.TravelDao.mergeTravelPlan(plan);
+			for(TravelVo travelVo : planList) {
+				log.info(travelVo.toString());
+				int result = 0;
+				if(EditRequest.EDIT_REQUEST.getStatus().equals(travelVo.getRequest())) {
+					result = this.TravelDao.validateDetailPlan(travelVo);
+					if(result <= 0) {
+						travelVo.setRequest(EditRequest.EDIT_SUCCESS.getStatus());
+					}
+				}
+				affectedRows = this.TravelDao.mergeTravelPlan(travelVo);
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -123,6 +131,44 @@ public class TravelServiceImpl implements TravelService {
 			e.printStackTrace();
 		}
 		return findUser;
+	}
+
+	@Override
+	public Integer planEditRequest(String[] travelSeqs, String userSeq) {
+		Integer affectedRows = 0;
+		
+		try {
+			if(travelSeqs != null && userSeq != null){
+				for(String travelSeq : travelSeqs) {
+					TravelVo travelVo = new TravelVo();
+					travelVo.setSeq(travelSeq);
+					travelVo.setUserSeq(userSeq);
+					travelVo.setRequest(EditRequest.EDIT_REQUEST.getStatus());
+					affectedRows = this.TravelDao.updateRequest(travelVo);
+				}
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return affectedRows;
+	}
+
+	@Override
+	public Integer validateEditRequest(UserVo userVo) {
+		Integer result = 0;
+		
+		try {
+			for(TravelVo travelVo : userVo.getTravelVo()) {
+				if(EditRequest.EDIT_REQUEST.getStatus().equals(travelVo.getRequest())) {
+					result = this.TravelDao.validateDetailPlan(travelVo);
+				}
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return result;
 	}
 
 }

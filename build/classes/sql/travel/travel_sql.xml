@@ -82,7 +82,8 @@
 		        trave_trans = #{traveTrans},
 		        trans_time = #{transTime},
 		        use_expend = #{useExpend},
-		        trave_detail = #{traveDetail}
+		        trave_detail = #{traveDetail},
+		        request = #{request, jdbcType=VARCHAR}
 		WHEN NOT MATCHED THEN
 		    INSERT (trave_seq, seq, trave_day, trave_time, trave_city, trave_county, trave_loc, trave_trans, trans_time, use_expend, trave_detail)
 		    VALUES(
@@ -113,7 +114,8 @@
 			trans_time,
 			use_time,
 			use_expend,
-			trave_detail
+			trave_detail,
+			request
 		FROM
 			TRAVE_INFO
 		WHERE
@@ -147,5 +149,33 @@
 		WHERE
 			USER_NAME = #{name}
 			AND USER_PHONE = #{phone}
+    </select>
+    
+    <update id="updateRequest" parameterType="com.spring.board.vo.TravelVo">
+    	UPDATE trave_info 
+    	SET
+    		REQUEST = #{request}
+   		WHERE
+   			TRAVE_SEQ = #{seq}
+   			AND SEQ = #{userSeq}
+    </update>
+    
+    <select id="validateDetailPlan" parameterType="com.spring.board.vo.TravelVo" resultType="Integer">
+    	SELECT
+		    count(trave_seq)
+		FROM
+		    trave_info
+		WHERE
+		    TRAVE_SEQ = #{seq}
+		    AND SEQ = #{userSeq}
+		    AND TRAVE_DAY = #{traveDay}
+		    AND TRAVE_TIME = #{traveTime}
+		    AND TRAVE_CITY = #{traveCity}
+		    AND TRAVE_COUNTY = #{traveCounty}
+		    AND TRAVE_LOC = #{traveLoc}
+		    AND TRAVE_TRANS = #{traveTrans}
+		    AND TRANS_TIME = #{transTime}
+		    AND USE_EXPEND = #{useExpend}
+		    AND TRAVE_DETAIL = #{traveDetail}
     </select>
 </mapper>

@@ -55,4 +55,14 @@ public class TravelDaoImpl implements TravelDao{
 		return this.sqlSession.selectOne("travel.selectUserDetail", userVo);
 	}
 
+	@Override
+	public Integer updateRequest(TravelVo travelVo) throws Exception {
+		return this.sqlSession.update("travel.updateRequest", travelVo);
+	}
+
+	@Override
+	public Integer validateDetailPlan(TravelVo travelVo) throws Exception {
+		return this.sqlSession.selectOne("travel.validateDetailPlan", travelVo);
+	}
+
 }

@@ -107,12 +107,27 @@ public class TravelController {
 	public Map<String, Object> adminAddPlans(@RequestBody UserVo userVo){
 		log.trace("adminAddPlans({}) invoked.",userVo.getTravelVo());
 		Map<String, Object> map = new HashMap<>();
+		
+		
 		Integer affectedRows = this.travelService.submitTravelPlans(userVo.getTravelVo());
 		log.info("affectedRows::{}",affectedRows);
 		
 		map.put("result", affectedRows);
 		
 		return map;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/validatePlan.do", method=RequestMethod.POST)
+	public ResponseEntity<String> validatePlan(@RequestBody UserVo userVo){
+		String response = "EMPTY";
+		
+		Integer result = this.travelService.validateEditRequest(userVo);
+		if(result > 0) {
+			response = "NOT_EMPTY";
+		}
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 	
 	@ResponseBody
@@ -151,6 +166,21 @@ public class TravelController {
 		map.put("redirect", "/travel/login.do");
 		
 		return map;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value="/editRequest.do", method=RequestMethod.PUT)
+	public ResponseEntity<String> editRequest(String[] travelSeqs, String userSeq) {
+		log.trace("editRequest({}, {}) invoked.", Arrays.toString(travelSeqs), userSeq);
+		
+		String result = "FAIL";
+		Integer affectedRows =  this.travelService.planEditRequest(travelSeqs, userSeq);
+		
+		if(affectedRows > 0) {
+			result = "SUCCESS";
+		}
+		
+		return new ResponseEntity<String>(result, HttpStatus.OK);
 	}
 	
 

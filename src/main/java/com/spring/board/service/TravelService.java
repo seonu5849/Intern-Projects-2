@@ -21,4 +21,7 @@ public interface TravelService {
 	
 	public abstract UserVo findUserDetail(UserVo userVo);
 	
+	public abstract Integer planEditRequest(String[] travelSeqs, String userSeq);
+	
+	public abstract Integer validateEditRequest(UserVo userVo);
 }

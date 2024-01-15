@@ -189,6 +189,9 @@ function createTemplateRow(tbody){
 
 let userSeq;
 $j(document).on('click', '#user_list tbody tr', function(){
+		$j('#user_list tbody tr').removeClass('active');
+		$j(this).addClass('active');
+	
 		sessionStorage.clear();
 		let btnDiv = $j('.div_date_btn');
 		
@@ -229,9 +232,22 @@ function getUserDetailPlans(userSeq){
 			sessionStorage.setItem('entitys', JSON.stringify(data.list));
 			rowNum = data.total + 1;
 			createTempateTable();
+			viewEditRequest();
 		},
 		error: function(xhr, error){
 			console.log('Aajx fail message : '+error);
+		}
+	});
+}
+
+function viewEditRequest(){
+	const table = $j('.table_trave');
+	const rows = table.find('tbody tr');
+	
+	rows.each(function() {
+		console.log($j(this).find('.request').val());
+		if($j(this).find('.request').val() === 'M'){
+			$j(this).css('background-color', 'rgba(255, 0, 0, 0.5)');
 		}
 	});
 }
@@ -251,7 +267,7 @@ $j(document).on('click', '.date_btn', function(e){
 	traveDay = $j(this).val();
 	
 	createTempateTable();
-	
+	viewEditRequest();
 });
 
 function isDuplicateSession(validate, sessionData){
@@ -532,6 +548,37 @@ $j(document).on('click', '#submit', function(){
 	isDuplicateSession(validate, sessionData);
 	console.log(sessionData);
 	
+	let flag = true;
+	$j.ajax({
+		type: 'POST',
+		url: '/travel/validatePlan.do',
+		data: JSON.stringify({plans : sessionData}),
+		contentType: 'application/json',
+		success: function(data){
+			console.log(data);
+			if(data === 'NOT_EMPTY'){
+				flag = false;
+			}
+			
+			if(!flag){
+				let isSave = confirm('값을 수정하지 않았습니다.\n저장하시겠습니까?');
+				if(!isSave){
+					return;
+				}
+			}
+			submitTravelPlan(sessionData);
+			getUserDetailPlans(userSeq);
+		},
+		error: function(xhr, error){
+			console.log('Ajax fail Message : '+error);
+		}
+	})
+	
+	
+	
+});
+
+function submitTravelPlan(sessionData){
 	$j.ajax({
 		type: 'POST',
 		url: '/travel/admin.do',
@@ -549,6 +596,9 @@ $j(document).on('click', '#submit', function(){
 				let foundRow = findRowByValue(table, findName, comparator);
 				foundRow.find('.offered_price').text(offeredPrice);
 				compareEstimatedVsQuote();
+				
+				console.log('ajax 실행');
+				console.log(sessionData);
 			}else{
 				alert('저장실패');
 			}
@@ -557,7 +607,7 @@ $j(document).on('click', '#submit', function(){
 			console.log('Ajax fail Message : '+error);
 		}
 	})
-});
+}
 
 function changeOfferedPriceValue(sessionData){
 	let offeredPrice = 0;
@@ -588,7 +638,8 @@ function arrayTravelPlan(){ // array plan 생성
 			traveTrans: $j(this).find('.traveTrans').val(),
 			transTime: $j(this).find('.transTime').val(),
 			useExpend: isNaN(expend) ? '' : expend,
-			traveDetail: $j(this).find('.traveDetail').val()
+			traveDetail: $j(this).find('.traveDetail').val(),
+			request: $j(this).find('.request').val()
 		};
 		
 		arrayPlans.push(plan);
@@ -603,6 +654,10 @@ function validateEntityEmpty(entity, i){
 	}
 	
 	for(let key of entityKeys){
+		if (key === 'request') {
+	        continue;
+	    }
+	    
 		if(entity[key] === ''){
 			let topTh = searchTopTh(key);
 			printAlert(`"${topTh}" 란이 입력되지 않았습니다.`, $j(`.${key}`).eq(i));
